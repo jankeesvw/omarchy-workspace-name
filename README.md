@@ -3,6 +3,8 @@
 An [Omarchy](https://omarchy.org) bar widget that gives the current workspace a
 name, and lets you type a new one.
 
+![The widget in the bar: switching workspaces, and renaming one](demo.gif)
+
 Hyprland workspaces are numbered, and a number tells you where you are but not
 what you were doing there. This widget puts a short label next to the workspace
 indicators: `invoicing`, `bug #4412`, `reading`. Switch workspaces and the label
@@ -19,6 +21,17 @@ omarchy plugin add https://github.com/jankeesvw/omarchy-workspace-name.git --ena
 
 The widget lands in the left section of the bar by default. Move it with
 `omarchy bar move`, or from the bar's own settings panel.
+
+## Remove
+
+```bash
+omarchy plugin remove jankeesvw.workspace-name
+```
+
+That takes the widget out of the bar and deletes the plugin. The names you gave
+your workspaces are yours, not the plugin's, so they stay behind in
+`$XDG_STATE_HOME/workspace-hud/`. Delete that directory if you want them gone
+too.
 
 ## Use
 
