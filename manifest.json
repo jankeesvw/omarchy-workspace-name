@@ -4,7 +4,7 @@
   "name": "Workspace name",
   "version": "1.0.0",
   "author": "Jankees van Woezik",
-  "description": "Name of the current workspace, with a field to set it",
+  "description": "Name and icon of the current workspace, with fields to set them",
   "homepage": "https://github.com/jankeesvw/omarchy-workspace-name",
   "license": "MIT",
   "kinds": [
@@ -15,7 +15,7 @@
   },
   "barWidget": {
     "displayName": "Workspace name",
-    "description": "Name of the current workspace, with a field to set it",
+    "description": "Name and icon of the current workspace, with fields to set them",
     "category": "Compositor",
     "allowMultiple": false,
     "defaultSection": "left"
