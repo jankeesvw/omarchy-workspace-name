@@ -74,6 +74,25 @@ Panel {
   implicitWidth: hasLabel ? label.implicitWidth + Style.space(16) : 0
   implicitHeight: bar ? bar.barSize : Style.bar.sizeHorizontal
 
+
+  // A small, opinionated set of icons for the things people actually keep a
+  // workspace for, so the common case is a click rather than a trip to the
+  // Nerd Fonts cheat sheet. Anything outside it still goes in the field by
+  // hand — the grid is a shortcut, not the vocabulary.
+  //
+  // Stored as codepoints rather than glyphs: Private Use Area characters do
+  // not survive every editor and every copy-paste, and a list of them reads
+  // as a column of blanks in a diff. Every one of these was checked against
+  // the font Omarchy ships.
+  readonly property var presetIcons: [
+    0xF120, 0xF121, 0xE73C, 0xE74E, 0xE7BA, 0xF1D3, 0xF09B, 0xF296,
+    0xF268, 0xF269, 0xF086, 0xF198, 0xF066F, 0xF099, 0xF0E0, 0xF292,
+    0xF001, 0xF1BC, 0xF03D, 0xF11B, 0xF1B6, 0xF030, 0xF03E, 0xF1FC,
+    0xF07B, 0xF02D, 0xF040, 0xF073, 0xF017, 0xF002, 0xF188, 0xF080,
+    0xF1C0, 0xF233, 0xF0C2, 0xE7B0, 0xF17C, 0xF179, 0xF17A, 0xF17B,
+    0xF015, 0xF013, 0xF023, 0xF0C3, 0xF135, 0xF0F4, 0xF005, 0xF04B
+  ]
+
   function nameFilePath(id) {
     return root.stateDir + "/" + id
   }
@@ -215,7 +234,7 @@ Panel {
           id: iconField
           anchors.verticalCenter: parent.verticalCenter
           width: parent.width - Style.space(28) - Style.space(8)
-          placeholderText: "Icon: paste a glyph or type f121"
+          placeholderText: "Icon, or pick one below"
           foreground: root.foreground
           verticalPadding: Style.space(4)
           onAccepted: root.save()
@@ -230,6 +249,46 @@ Panel {
           font.family: root.fontFamily
           font.pixelSize: Style.font.icon
           horizontalAlignment: Text.AlignHCenter
+        }
+      }
+
+
+      // The picker sets the field rather than saving on the spot: the panel
+      // saves both halves together on Enter, and a click that wrote one of
+      // them straight to disk would make that rule a lie.
+      Grid {
+        id: presets
+        width: parent.width
+        columns: 8
+        spacing: Style.space(2)
+
+        readonly property real cell: Math.floor((width - spacing * (columns - 1)) / columns)
+
+        Repeater {
+          model: root.presetIcons
+
+          Rectangle {
+            required property var modelData
+            readonly property string glyph: String.fromCodePoint(modelData)
+
+            width: presets.cell
+            height: presets.cell
+            radius: Style.cornerRadius
+            color: iconField.text === glyph
+              ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.18)
+              : (hover.hovered ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.08) : "transparent")
+
+            Text {
+              anchors.centerIn: parent
+              text: parent.glyph
+              color: root.foreground
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.icon
+            }
+
+            HoverHandler { id: hover }
+            TapHandler { onTapped: iconField.text = parent.glyph }
+          }
         }
       }
 

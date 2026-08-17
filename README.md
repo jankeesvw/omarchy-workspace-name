@@ -45,10 +45,14 @@ in either, both, or neither — press Enter to save. Emptying a field clears tha
 half, and clearing both makes the widget disappear again. Escape closes without
 saving.
 
-The icon field takes the two forms you are likely to have an icon in: **paste
-the glyph**, or type its **codepoint** (`f121`, `U+F121`, `0xF121`). Both are
-needed — a Nerd Font glyph cannot be typed and a codepoint cannot be read — so
-the preview beside the field shows what is about to be saved.
+Under the icon field is a grid of common ones — terminals, browsers, chat,
+music, databases, the usual suspects. Click one and it drops into the field.
+
+For anything outside the grid, the field takes the two forms you are likely to
+have an icon in: **paste the glyph**, or type its **codepoint** (`f121`,
+`U+F121`, `0xF121`). Both are needed — a Nerd Font glyph cannot be typed and a
+codepoint cannot be read — so the preview beside the field shows what is about
+to be saved.
 
 Since a workspace with no name and no icon shows nothing, there is nothing to
 click on the first one you want to label, so bind a key to open the panel:
@@ -94,6 +98,36 @@ running in, and clear the label when it finishes.
 
 Names are not remembered across reboots any longer than the state directory
 is; nothing prunes them, so a name stays on a workspace until you clear it.
+
+## Where the icons come from
+
+The font. There is nothing icon-specific in the widget: it draws a character,
+and if the bar's font has that character you get a picture instead of a box.
+
+That works because Omarchy's bar uses a **Nerd Font** — an ordinary monospace
+face patched to carry whole icon sets (Font Awesome, Material Design,
+Devicons, Octicons, Seti-UI) in Unicode's Private Use Area. An icon is
+literally a character, which is why `echo f120 > 3.icon` is enough to set one.
+
+**Recommended: whatever Nerd Font your bar already uses.** Omarchy ships
+[JetBrainsMono Nerd Font](https://www.nerdfonts.com/font-downloads) and the
+grid above was checked glyph by glyph against it, so the presets are safe out
+of the box. Any other Nerd Font works too; only the coverage changes.
+
+To go beyond the grid, search [the Nerd Fonts cheat
+sheet](https://www.nerdfonts.com/cheat-sheet) by name and take the codepoint.
+Check it before you rely on it, because the cheat sheet describes the whole
+Nerd Fonts collection and your build may be a subset:
+
+```bash
+fc-list ":charset=f121" family    # empty means your font does not have it
+```
+
+If it comes back empty, you are not stuck: the toolkit falls back to any other
+installed font that does have the codepoint. Installing a font that carries the
+icon is enough — nothing has to be configured. The one case fallback cannot fix
+is a codepoint your main font already uses for something else, since the main
+font wins; there you would have to change the bar's font rather than add one.
 
 ## Requirements
 
