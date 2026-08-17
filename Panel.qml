@@ -14,8 +14,8 @@ import qs.Ui
 //
 // Names live one per file in $XDG_STATE_HOME/workspace-hud/<id>, plain text,
 // no daemon and no database. Anything else on the system can read the current
-// name with a cat, and writing one from a script is a redirect — the directory
-// is watched, so the bar picks that up without being told.
+// name with a cat, and writing one from a script is a redirect. The file is
+// watched, so the bar picks that up without being told.
 Panel {
   id: root
 

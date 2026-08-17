@@ -26,7 +26,7 @@ Click the label to open the panel, type a name, press Enter. An empty name
 clears it and the widget disappears again. Escape closes without saving.
 
 Since a workspace with no name shows nothing, there is nothing to click on the
-first one you want to label — so bind a key to open the panel:
+first one you want to label, so bind a key to open the panel:
 
 ```lua
 -- ~/.config/hypr/bindings.lua
@@ -48,8 +48,8 @@ That means other tooling can join in. Reading the name of workspace 3 is a
 cat ~/.local/state/workspace-hud/3
 ```
 
-And setting one is a redirect — the directory is watched, so the bar picks up
-the change without being told:
+And setting one is a redirect. The file is watched, so the bar picks up the
+change without being told:
 
 ```bash
 echo "deploying" > ~/.local/state/workspace-hud/3
@@ -64,7 +64,7 @@ is; nothing prunes them, so a name stays on a workspace until you clear it.
 ## Requirements
 
 Omarchy with `omarchy-shell` (the Quickshell-based bar) and Hyprland. Nothing
-else — no extra packages, no helper scripts.
+else: no extra packages, no helper scripts.
 
 ## License
 
