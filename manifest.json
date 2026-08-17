@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "jankeesvw.workspace-name",
+  "name": "Workspace name",
+  "version": "1.0.0",
+  "author": "Jankees van Woezik",
+  "description": "Name of the current workspace, with a field to set it",
+  "homepage": "https://github.com/jankeesvw/omarchy-workspace-name",
+  "license": "MIT",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Workspace name",
+    "description": "Name of the current workspace, with a field to set it",
+    "category": "Compositor",
+    "allowMultiple": false,
+    "defaultSection": "left"
+  }
+}
