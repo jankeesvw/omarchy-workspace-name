@@ -4,7 +4,7 @@
   "name": "Workspace name",
   "version": "1.0.0",
   "author": "Jankees van Woezik",
-  "description": "Name and icon of the current workspace, with fields to set them",
+  "description": "Name and icon of the current workspace, and optionally the workspace indicators",
   "homepage": "https://github.com/jankeesvw/omarchy-workspace-name",
   "license": "MIT",
   "kinds": [
@@ -15,9 +15,29 @@
   },
   "barWidget": {
     "displayName": "Workspace name",
-    "description": "Name and icon of the current workspace, with fields to set them",
+    "description": "Name and icon of the current workspace, and optionally the workspace indicators",
     "category": "Compositor",
     "allowMultiple": false,
-    "defaultSection": "left"
+    "defaultSection": "left",
+    "defaults": {
+      "indicators": false,
+      "numbers": false
+    },
+    "schema": [
+      {
+        "key": "indicators",
+        "type": "boolean",
+        "label": "Draw the workspace indicators",
+        "defaultValue": false,
+        "description": "A button per workspace, showing its icon where one is set and its number where none is. This stands in for the Workspaces widget rather than sitting beside it, so take that one out of the bar first."
+      },
+      {
+        "key": "numbers",
+        "type": "boolean",
+        "label": "Keep the number beside the icon",
+        "defaultValue": false,
+        "description": "Show icon and number together instead of letting the icon stand in for the number. Each button grows past the single-character slot the stock indicators use."
+      }
+    ]
   }
 }

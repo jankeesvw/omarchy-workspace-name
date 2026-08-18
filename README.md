@@ -40,19 +40,23 @@ too.
 
 ## Use
 
-Click the label to open the panel. It has two fields: an icon and a name. Fill
-in either, both, or neither — press Enter to save. Emptying a field clears that
-half, and clearing both makes the widget disappear again. Escape closes without
-saving.
+Click the label to open the panel. It holds a name field and, under it, a grid
+of icons. Fill in either, both, or neither, then press Enter to save. An empty
+name clears the name, the first cell of the grid (`×`) clears the icon, and
+clearing both makes the widget disappear again. Escape closes without saving.
 
-Under the icon field is a grid of common ones — terminals, browsers, chat,
-music, databases, the usual suspects. Click one and it drops into the field.
+The panel opens on the name, because renaming is what you came for on most
+days. Press Down to step into the grid and walk it with the arrow keys. Every
+move takes the icon under the cursor, so what you are pointing at is always
+what Enter will save. The icon the workspace already has is where the cursor
+starts and stays highlighted, Up off the top row hands focus back to the name,
+and clicking a cell does the same as walking onto it.
 
-For anything outside the grid, the field takes the two forms you are likely to
-have an icon in: **paste the glyph**, or type its **codepoint** (`f121`,
-`U+F121`, `0xF121`). Both are needed — a Nerd Font glyph cannot be typed and a
-codepoint cannot be read — so the preview beside the field shows what is about
-to be saved.
+The grid holds what a workspace is usually for: shells and editors, mail and
+chat, media, infrastructure. Brand marks are mostly left out, since a
+workspace is a kind of work rather than a logo. For anything the grid does not
+have, write the file directly. That takes a codepoint as readily as the glyph,
+which is covered below.
 
 Since a workspace with no name and no icon shows nothing, there is nothing to
 click on the first one you want to label, so bind a key to open the panel:
@@ -63,6 +67,30 @@ o.bind(hyper .. "R", "Workspace name", "omarchy-shell shell toggle jankeesvw.wor
 ```
 
 That is the way in, and it stays the faster way once names are everywhere.
+
+## Drawing the indicators too
+
+The widget can draw the row of workspace buttons as well. It is off until you
+ask for it, in the widget's entry in `~/.config/omarchy/shell.json`:
+
+```json
+{ "id": "jankeesvw.workspace-name", "indicators": true }
+```
+
+Each button carries the workspace's icon where one is set and its number where
+none is, and clicking one focuses that workspace. It stands in for the
+`omarchy.workspaces` widget rather than sitting beside it, so take that one out
+of the bar first.
+
+An icon standing in for the number keeps a button one character wide, which is
+the width the stock indicators are built at, so nothing about the shape of the
+bar changes. Set `"numbers": true` to show both instead. That reads as `icon 4`
+and grows every button to fit.
+
+The reason to want this: an icon on the workspace you are already standing on
+is only half useful, since the row of numbers is where you look to find the one
+you want. Feeding the row and the label from the same file is what keeps them
+from ever disagreeing.
 
 ## Where names and icons are stored
 
