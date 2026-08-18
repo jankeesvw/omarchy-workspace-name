@@ -46,6 +46,12 @@ Panel {
   // the stock indicators are built at. Keeping both reads as "icon 4" and has
   // to grow the button, which is a change to the shape of the bar.
   readonly property bool showNumbers: setting("numbers", false) === true
+  // How many workspaces stand on the bar whether or not they exist yet. Five
+  // is what the stock indicators hold open, which suits a machine where the
+  // high ones come and go; someone who lives on ten wants all ten there, empty
+  // or not, so the row does not reflow under the cursor. The ceiling is only
+  // there to keep a typo from drawing a thousand buttons.
+  readonly property int alwaysShown: Math.max(1, Math.min(99, setting("alwaysShown", 5)))
 
   readonly property string home: Quickshell.env("HOME") || ""
   readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || home + "/.local/state") + "/workspace-hud"
@@ -125,16 +131,23 @@ Panel {
     return Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, alpha)
   }
 
-  // Which workspaces the row shows: one through five always, so the bar does
-  // not reflow as they come and go, plus whatever else exists up to ten. Same
-  // rule the stock indicators use, on purpose.
+  // Which workspaces the row shows: the first `alwaysShown` of them whether
+  // they exist or not, so the bar does not reflow as they come and go, plus
+  // whatever else happens to exist.
+  //
+  // That second half stops at ten, or at the number held open when that is
+  // higher. Some tool somewhere will make workspace 4711 one day, and a
+  // workspace nobody asked for should not be able to stretch the bar.
   function workspaceIds() {
-    var ids = [1, 2, 3, 4, 5]
+    var ids = []
+    for (var n = 1; n <= root.alwaysShown; n++) ids.push(n)
+
+    var ceiling = Math.max(root.alwaysShown, 10)
     var values = Hyprland.workspaces.values
 
     for (var i = 0; i < values.length; i++) {
       var id = values[i].id
-      if (id > 0 && id <= 10 && ids.indexOf(id) === -1) ids.push(id)
+      if (id > 0 && id <= ceiling && ids.indexOf(id) === -1) ids.push(id)
     }
 
     ids.sort(function(left, right) { return left - right })

@@ -21,7 +21,8 @@
     "defaultSection": "left",
     "defaults": {
       "indicators": false,
-      "numbers": false
+      "numbers": false,
+      "alwaysShown": 5
     },
     "schema": [
       {
@@ -37,6 +38,16 @@
         "label": "Keep the number beside the icon",
         "defaultValue": false,
         "description": "Show icon and number together instead of letting the icon stand in for the number. Each button grows past the single-character slot the stock indicators use."
+      },
+      {
+        "key": "alwaysShown",
+        "type": "integer",
+        "label": "Workspaces always shown",
+        "min": 1,
+        "max": 99,
+        "step": 1,
+        "defaultValue": 5,
+        "description": "How many workspaces stand on the bar whether or not they exist yet. Anything beyond this that does exist is added on top, up to ten or this number, whichever is higher."
       }
     ]
   }
