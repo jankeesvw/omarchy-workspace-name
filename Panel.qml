@@ -397,11 +397,25 @@ Panel {
       model: root.indicatorIds
 
       Item {
+        id: slot
         required property int modelData
 
         readonly property var workspace: root.workspaceById(modelData)
         readonly property bool occupied: workspace !== null && workspace.toplevels.values.length > 0
         readonly property bool focused: root.workspaceId === modelData
+
+        readonly property string iconGlyph: root.indicatorIcons[modelData] || ""
+        readonly property string numberText: modelData === 10 ? "0" : String(modelData)
+        // With both shown, the icon and the number are drawn as two items
+        // rather than as one string. Every Nerd Font glyph advances exactly
+        // one monospace cell, but the ink inside that cell runs from about
+        // half a cell to nearly two: the wide ones spill past their own
+        // advance and crowd the number, the narrow ones leave a hole. One
+        // space between them is therefore not one gap, it is whatever each
+        // glyph happened to leave over. Measuring the ink and placing the two
+        // by hand is what makes the gap the same under every icon.
+        readonly property bool pairDrawn: root.showNumbers && iconGlyph !== ""
+        readonly property real pairGap: Style.spaceReal(5)
 
         implicitWidth: button.implicitWidth
         implicitHeight: button.implicitHeight
@@ -424,19 +438,71 @@ Panel {
           id: button
           anchors.fill: parent
           bar: root.bar
-          text: root.indicatorText(parent.modelData)
-          opacity: parent.occupied || parent.focused ? 1 : 0.5
+          text: root.indicatorText(slot.modelData)
+          // The pair below stands in for the built-in label when it is drawn.
+          labelVisible: !slot.pairDrawn
+          opacity: slot.occupied || slot.focused ? 1 : 0.5
           horizontalMargin: 6
           verticalPadding: 6
-          fixedWidth: root.vertical ? root.barSize : (root.showNumbers ? -1 : Style.space(20))
+          fixedWidth: root.vertical
+                      ? root.barSize
+                      : (slot.pairDrawn
+                         ? pair.implicitWidth + button.scaledHorizontalMargin * 2
+                         : (root.showNumbers ? -1 : Style.space(20)))
           fixedHeight: root.barSize
           // Clicking the workspace you are already on has nothing to focus,
           // so that click opens the panel instead. The button you are looking
           // at is the one you want to name, and it takes the same plain left
           // click as everything else on the bar.
           onPressed: function(b) {
-            if (parent.focused) root.toggle()
-            else root.focusWorkspace(parent.modelData)
+            if (slot.focused) root.toggle()
+            else root.focusWorkspace(slot.modelData)
+          }
+
+          // tightBoundingRect is the ink, as against the advance width the
+          // string layout would have used.
+          TextMetrics {
+            id: iconInk
+            font.family: button.fontFamily
+            font.pixelSize: button.fontSize
+            text: slot.iconGlyph
+          }
+
+          Item {
+            id: pair
+            visible: slot.pairDrawn
+            anchors.centerIn: parent
+            implicitWidth: iconInk.tightBoundingRect.width + slot.pairGap + numberLabel.implicitWidth
+            implicitHeight: numberLabel.implicitHeight
+            width: implicitWidth
+            height: implicitHeight
+
+            Text {
+              id: iconLabel
+              // Pulled left by the ink's own left bearing, so the glyph starts
+              // at the left edge of the width it was measured into.
+              x: -iconInk.tightBoundingRect.x
+              // Baseline rather than centre: this is where a single string put
+              // the two, and it is what keeps an icon sitting on the number's
+              // own line instead of floating above it.
+              anchors.baseline: numberLabel.baseline
+              text: slot.iconGlyph
+              color: button.foreground
+              font.family: button.fontFamily
+              font.pixelSize: button.fontSize
+              renderType: Text.NativeRendering
+            }
+
+            Text {
+              id: numberLabel
+              x: iconInk.tightBoundingRect.width + slot.pairGap
+              anchors.verticalCenter: parent.verticalCenter
+              text: slot.numberText
+              color: button.foreground
+              font.family: button.fontFamily
+              font.pixelSize: button.fontSize
+              renderType: Text.NativeRendering
+            }
           }
         }
       }
