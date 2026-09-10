@@ -423,6 +423,7 @@ Panel {
         // by hand is what makes the gap the same under every icon.
         readonly property bool pairDrawn: root.showNumbers && iconGlyph !== ""
         readonly property real pairGap: Style.spaceReal(5)
+        readonly property bool iconOnlyDrawn: !root.showNumbers && iconGlyph !== ""
 
         implicitWidth: button.implicitWidth
         implicitHeight: button.implicitHeight
@@ -447,7 +448,7 @@ Panel {
           bar: root.bar
           text: root.indicatorText(slot.modelData)
           // The pair below stands in for the built-in label when it is drawn.
-          labelVisible: !slot.pairDrawn
+          labelVisible: !slot.pairDrawn && !slot.iconOnlyDrawn
           opacity: slot.occupied || slot.focused ? 1 : 0.5
           horizontalMargin: 6
           verticalPadding: 6
@@ -512,6 +513,28 @@ Panel {
               x: iconInk.tightBoundingRect.width + slot.pairGap
               anchors.verticalCenter: parent.verticalCenter
               text: slot.numberText
+              textFormat: Text.PlainText
+              color: button.foreground
+              font.family: button.fontFamily
+              font.pixelSize: button.fontSize
+              renderType: Text.NativeRendering
+            }
+          }
+
+          Item {
+            id: iconOnly
+            visible: slot.iconOnlyDrawn
+            anchors.fill: parent
+
+            readonly property real emCenterX: iconInk.advanceWidth / 2
+            readonly property real inkCenterX: iconInk.tightBoundingRect.x
+              + iconInk.tightBoundingRect.width / 2
+            readonly property real blendedCenterX: emCenterX * 0.25 + inkCenterX * 0.75
+
+            Text {
+              x: iconOnly.width / 2 - iconOnly.blendedCenterX
+              anchors.verticalCenter: parent.verticalCenter
+              text: slot.iconGlyph
               textFormat: Text.PlainText
               color: button.foreground
               font.family: button.fontFamily
