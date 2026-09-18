@@ -558,26 +558,18 @@ Panel {
             }
           }
 
-          Item {
-            id: iconOnly
+          // An icon on its own goes through the shell's OpticalGlyph, which
+          // centres the ink rather than the advance width: the built-in label
+          // centres the whole monospace cell, and a glyph whose ink sits off
+          // centre in that cell then leans to one side. This is how the bar
+          // places its own icons, so the workspace icons line up with them.
+          OpticalGlyph {
             visible: slot.iconOnlyDrawn
             anchors.fill: parent
-
-            readonly property real emCenterX: iconInk.advanceWidth / 2
-            readonly property real inkCenterX: iconInk.tightBoundingRect.x
-              + iconInk.tightBoundingRect.width / 2
-            readonly property real blendedCenterX: emCenterX * 0.25 + inkCenterX * 0.75
-
-            Text {
-              x: iconOnly.width / 2 - iconOnly.blendedCenterX
-              anchors.verticalCenter: parent.verticalCenter
-              text: slot.iconGlyph
-              textFormat: Text.PlainText
-              color: button.foreground
-              font.family: button.fontFamily
-              font.pixelSize: button.fontSize
-              renderType: Text.NativeRendering
-            }
+            text: slot.iconGlyph
+            color: button.foreground
+            fontFamily: button.fontFamily
+            fontSize: button.fontSize
           }
         }
       }
