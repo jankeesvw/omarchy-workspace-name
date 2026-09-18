@@ -63,7 +63,25 @@ Panel {
   // The icon the panel will save. Held here rather than in a field, because
   // the picker is the whole of the icon interface now.
   property string pickedIcon: ""
-  readonly property int workspaceId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 0
+  // The workspace this widget is about: the one the monitor this bar is drawn
+  // on is displaying. A bar surface exists per monitor, and
+  // Hyprland.focusedWorkspace is one global value, so reading that would make
+  // both bars name the same workspace -- the second monitor's bar labelling a
+  // workspace that is not on it. monitorFor() maps this surface's screen to
+  // the Hyprland output; the screen comes off the window the widget lives in.
+  readonly property var barScreen: root.QsWindow.window ? root.QsWindow.window.screen : null
+  readonly property var barMonitor: root.barScreen ? Hyprland.monitorFor(root.barScreen) : null
+  readonly property int workspaceId: {
+    var m = root.barMonitor
+    if (m && m.activeWorkspace) return m.activeWorkspace.id
+    // No monitor yet (the window is still being attached): fall back to the
+    // focused workspace rather than to 0, so the label is never blank on a
+    // single-monitor machine during startup.
+    return Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 0
+  }
+  // Whether the keyboard is on this monitor, for the indicator row: the filled
+  // block means "focused here", a hollow one means "shown here".
+  readonly property bool monitorFocused: root.barMonitor !== null && Hyprland.focusedMonitor === root.barMonitor
   readonly property bool hasName: workspaceName !== ""
   readonly property bool hasIcon: workspaceIcon !== ""
 
@@ -101,6 +119,12 @@ Panel {
   // it is aimed at a workspace you have left, its fields filling with someone
   // else's name under your hands, so it closes instead of following along.
   onWorkspaceIdChanged: if (opened) close()
+
+  // Same reasoning, other half: this instance's workspace does not change
+  // when you move to the other monitor, so without this the panel would stay
+  // open on a screen you have walked away from, still aimed at a workspace
+  // you are no longer on.
+  onMonitorFocusedChanged: if (opened && !monitorFocused) close()
 
   onLabelTextChanged: {
     if (!seenFirstRead) return
@@ -409,7 +433,10 @@ Panel {
 
         readonly property var workspace: root.workspaceById(modelData)
         readonly property bool occupied: workspace !== null && workspace.toplevels.values.length > 0
+        // On this monitor. The row is drawn once per monitor, so a chip marked
+        // from the global focus would mark the same workspace on every bar.
         readonly property bool focused: root.workspaceId === modelData
+        readonly property bool keyboardHere: focused && root.monitorFocused
 
         readonly property string iconGlyph: root.indicatorIcons[modelData] || ""
         readonly property string numberText: modelData === 10 ? "0" : String(modelData)
@@ -423,6 +450,7 @@ Panel {
         // by hand is what makes the gap the same under every icon.
         readonly property bool pairDrawn: root.showNumbers && iconGlyph !== ""
         readonly property real pairGap: Style.spaceReal(5)
+        readonly property bool iconOnlyDrawn: !root.showNumbers && iconGlyph !== ""
 
         implicitWidth: button.implicitWidth
         implicitHeight: button.implicitHeight
@@ -432,13 +460,19 @@ Panel {
         // glyph. An icon is picked to be recognised, and recoloring spends the
         // one thing it was chosen for. The block sits under the icon, so both
         // survive.
+        //
+        // The monitor showing a workspace without holding the keyboard gets
+        // the same block hollowed out: two shapes for two states, which theme
+        // colors cannot wash out the way a second tint would.
         Rectangle {
           anchors.fill: parent
           anchors.topMargin: Style.space(3)
           anchors.bottomMargin: Style.space(3)
           radius: Style.cornerRadius
-          color: root.tint(0.18)
-          visible: parent.focused
+          color: slot.keyboardHere ? root.tint(0.18) : "transparent"
+          border.width: slot.keyboardHere ? 0 : Math.max(1, Style.space(1) / 2)
+          border.color: root.tint(0.45)
+          visible: slot.focused
         }
 
         WidgetButton {
@@ -447,7 +481,7 @@ Panel {
           bar: root.bar
           text: root.indicatorText(slot.modelData)
           // The pair below stands in for the built-in label when it is drawn.
-          labelVisible: !slot.pairDrawn
+          labelVisible: !slot.pairDrawn && !slot.iconOnlyDrawn
           opacity: slot.occupied || slot.focused ? 1 : 0.5
           horizontalMargin: 6
           verticalPadding: 6
@@ -461,8 +495,12 @@ Panel {
           // so that click opens the panel instead. The button you are looking
           // at is the one you want to name, and it takes the same plain left
           // click as everything else on the bar.
+          //
+          // "Already on" means the keyboard is here, not merely that this
+          // monitor is showing it: on the other monitor's bar that click still
+          // has somewhere to go, and moving focus there is what it means.
           onPressed: function(b) {
-            if (slot.focused) root.toggle()
+            if (slot.keyboardHere) root.toggle()
             else root.focusWorkspace(slot.modelData)
           }
 
@@ -518,6 +556,20 @@ Panel {
               font.pixelSize: button.fontSize
               renderType: Text.NativeRendering
             }
+          }
+
+          // An icon on its own goes through the shell's OpticalGlyph, which
+          // centres the ink rather than the advance width: the built-in label
+          // centres the whole monospace cell, and a glyph whose ink sits off
+          // centre in that cell then leans to one side. This is how the bar
+          // places its own icons, so the workspace icons line up with them.
+          OpticalGlyph {
+            visible: slot.iconOnlyDrawn
+            anchors.fill: parent
+            text: slot.iconGlyph
+            color: button.foreground
+            fontFamily: button.fontFamily
+            fontSize: button.fontSize
           }
         }
       }

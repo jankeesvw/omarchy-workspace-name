@@ -43,7 +43,10 @@ too.
 
 Workspace numbers appear on the bar by default. Clicking one takes you to that
 workspace, and clicking the one you are already on opens the naming panel,
-since there is nothing left to switch to. It holds a name field and, under it,
+since there is nothing left to switch to. With more than one monitor, each bar
+shows the workspace its own monitor is on: a filled marker means the keyboard
+is there too, a hollow one means it is on another monitor, and clicking a
+hollow one moves the keyboard there instead of opening the panel. It holds a name field and, under it,
 a grid of icons. Fill in either, both, or neither,
 then press Enter to save. An empty name clears the name, the first cell of the
 grid (`×`) clears the icon, and clearing both hides the label. Escape closes

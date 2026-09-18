@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "jankeesvw.workspace-name",
   "name": "Workspace name",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Jankees van Woezik",
   "description": "Name and icon of the current workspace, and optionally the workspace indicators",
   "homepage": "https://github.com/jankeesvw/omarchy-workspace-name",
