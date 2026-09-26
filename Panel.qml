@@ -199,16 +199,17 @@ Panel {
   // That second half stops at ten, or at the number held open when that is
   // higher. Some tool somewhere will make workspace 4711 one day, and a
   // workspace nobody asked for should not be able to stretch the bar.
+  readonly property int indicatorCeiling: Math.max(root.alwaysShown, 10)
+
   function workspaceIds() {
     var ids = []
     for (var n = 1; n <= root.alwaysShown; n++) ids.push(n)
 
-    var ceiling = Math.max(root.alwaysShown, 10)
     var values = Hyprland.workspaces.values
 
     for (var i = 0; i < values.length; i++) {
       var id = values[i].id
-      if (id > 0 && id <= ceiling && ids.indexOf(id) === -1) ids.push(id)
+      if (id > 0 && id <= root.indicatorCeiling && ids.indexOf(id) === -1) ids.push(id)
     }
 
     ids.sort(function(left, right) { return left - right })
@@ -216,6 +217,15 @@ Panel {
   }
 
   readonly property var indicatorIds: showIndicators ? workspaceIds() : []
+
+  // How many slots the row and the icon readers are built with. Every id the
+  // row could ever show gets its slot once, and a workspace coming or going
+  // only shows or hides one. Handing the Repeater indicatorIds itself would
+  // rebuild every button on each change, and each WidgetButton registers with
+  // the bar as it is made and unregisters as it goes: the bar answers every one
+  // of those by re-syncing every plugin on it, which on a full bar held the
+  // shell's main thread for close to ten seconds per new workspace.
+  readonly property int slotCount: showIndicators ? indicatorCeiling : 0
 
   function workspaceById(id) {
     var values = Hyprland.workspaces.values
@@ -268,18 +278,19 @@ Panel {
   }
 
   Instantiator {
-    model: root.indicatorIds
+    model: root.slotCount
 
     delegate: FileView {
       // Typed, so what goes into the path below is a number and nothing else.
-      required property int modelData
+      required property int index
+      readonly property int workspace: index + 1
 
-      path: root.iconFilePath(modelData)
+      path: root.iconFilePath(workspace)
       watchChanges: true
       printErrors: false
       onFileChanged: reload()
-      onLoaded: root.setIndicatorIcon(modelData, root.parseIcon(text().trim()))
-      onLoadFailed: root.setIndicatorIcon(modelData, "")
+      onLoaded: root.setIndicatorIcon(workspace, root.parseIcon(text().trim()))
+      onLoadFailed: root.setIndicatorIcon(workspace, "")
     }
   }
 
@@ -425,21 +436,26 @@ Panel {
     rowSpacing: root.vertical ? Style.space(2) : 0
 
     Repeater {
-      model: root.indicatorIds
+      model: root.slotCount
 
       Item {
         id: slot
-        required property int modelData
+        required property int index
+        readonly property int workspaceNumber: index + 1
 
-        readonly property var workspace: root.workspaceById(modelData)
+        // The grid skips a hidden child, so a slot out of the row takes no
+        // room and no cell. See slotCount.
+        visible: root.indicatorIds.indexOf(workspaceNumber) !== -1
+
+        readonly property var workspace: root.workspaceById(workspaceNumber)
         readonly property bool occupied: workspace !== null && workspace.toplevels.values.length > 0
         // On this monitor. The row is drawn once per monitor, so a chip marked
         // from the global focus would mark the same workspace on every bar.
-        readonly property bool focused: root.workspaceId === modelData
+        readonly property bool focused: root.workspaceId === workspaceNumber
         readonly property bool keyboardHere: focused && root.monitorFocused
 
-        readonly property string iconGlyph: root.indicatorIcons[modelData] || ""
-        readonly property string numberText: modelData === 10 ? "0" : String(modelData)
+        readonly property string iconGlyph: root.indicatorIcons[workspaceNumber] || ""
+        readonly property string numberText: workspaceNumber === 10 ? "0" : String(workspaceNumber)
         // With both shown, the icon and the number are drawn as two items
         // rather than as one string. Every Nerd Font glyph advances exactly
         // one monospace cell, but the ink inside that cell runs from about
@@ -479,7 +495,7 @@ Panel {
           id: button
           anchors.fill: parent
           bar: root.bar
-          text: root.indicatorText(slot.modelData)
+          text: root.indicatorText(slot.workspaceNumber)
           // The pair below stands in for the built-in label when it is drawn.
           labelVisible: !slot.pairDrawn && !slot.iconOnlyDrawn
           opacity: slot.occupied || slot.focused ? 1 : 0.5
@@ -501,7 +517,7 @@ Panel {
           // has somewhere to go, and moving focus there is what it means.
           onPressed: function(b) {
             if (slot.keyboardHere) root.toggle()
-            else root.focusWorkspace(slot.modelData)
+            else root.focusWorkspace(slot.workspaceNumber)
           }
 
           // tightBoundingRect is the ink, as against the advance width the
