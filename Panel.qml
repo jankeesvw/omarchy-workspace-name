@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 
 // Workspace name: shows the name and the icon given to the current workspace,
@@ -32,7 +33,7 @@ Panel {
   moduleName: "jankeesvw.workspace-name"
   ipcTarget: "jankeesvw.workspace-name"
 
-  readonly property color foreground: bar ? bar.foreground : Color.foreground
+  readonly property color foreground: bar ? bar.foreground : Commons.Color.foreground
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
 
   // Panel is a bare Item, unlike BarWidget: these two do not come with it.
