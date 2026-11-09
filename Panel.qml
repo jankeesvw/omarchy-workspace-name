@@ -83,6 +83,67 @@ Panel {
   // Whether the keyboard is on this monitor, for the indicator row: the filled
   // block means "focused here", a hollow one means "shown here".
   readonly property bool monitorFocused: root.barMonitor !== null && Hyprland.focusedMonitor === root.barMonitor
+
+  // Omarchy 4.5 gives every monitor workspaces 1-10 of its own. Hyprland still
+  // numbers workspaces globally, so each monitor owns a block of ten (1-10,
+  // 11-20, and so on), and Omarchy writes down which block belongs to which
+  // connector in $XDG_STATE_HOME/omarchy/monitor-workspaces. The row on each
+  // bar is that monitor's block, numbered 1-0 the way Super + 1-0 reaches it
+  // there. Names and icons stay keyed by the real id, so the second monitor's
+  // first workspace keeps a name of its own in workspace-hud/11.
+  //
+  // Without that file (Omarchy before 4.5) every bar is block 0, which is the
+  // one global row this widget has always drawn.
+  readonly property int blockSize: 10
+  readonly property string monitorName: root.barMonitor ? root.barMonitor.name : ""
+  property var blocks: ({})
+  property bool perMonitor: false
+
+  function readBlocks(text) {
+    var next = {}
+    var lines = String(text || "").split("\n")
+    for (var i = 0; i < lines.length; i++) {
+      var fields = lines[i].split("\t")
+      var block = parseInt(fields[0], 10)
+      if (fields.length >= 3 && fields[1] !== "" && block >= 0) next[fields[1]] = block
+    }
+    root.blocks = next
+    root.perMonitor = Object.keys(next).length > 0
+  }
+
+  FileView {
+    path: (Quickshell.env("XDG_STATE_HOME") || root.home + "/.local/state") + "/omarchy/monitor-workspaces"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: root.readBlocks(text())
+    onLoadFailed: root.readBlocks("")
+  }
+
+  function blockOf(id) {
+    return Math.floor((id - 1) / root.blockSize)
+  }
+
+  // A monitor Omarchy has not written down yet is in the block of the
+  // workspace it shows, which is where Omarchy is about to put it.
+  readonly property int block: {
+    if (!root.perMonitor) return 0
+    var known = root.blocks[root.monitorName]
+    if (known !== undefined) return known
+    return root.workspaceId > 0 ? root.blockOf(root.workspaceId) : 0
+  }
+  readonly property int firstId: root.block * root.blockSize + 1
+
+  // The number a workspace goes by on its own monitor's bar.
+  function slotNumber(id) {
+    return root.perMonitor ? (id - 1) % root.blockSize + 1 : id
+  }
+
+  function numberText(id) {
+    var n = root.slotNumber(id)
+    return n === 10 ? "0" : String(n)
+  }
+
   readonly property bool hasName: workspaceName !== ""
   readonly property bool hasIcon: workspaceIcon !== ""
 
@@ -101,7 +162,7 @@ Panel {
     // Placeholder: show the workspace number so there is something to click
     // on to open the naming panel.  Only after the initial file read, so the
     // widget stays invisible during the brief load.
-    if (seenFirstRead && workspaceId > 0) return String(workspaceId)
+    if (seenFirstRead && workspaceId > 0) return String(slotNumber(workspaceId))
     return ""
   }
   readonly property bool hasLabel: labelText !== ""
@@ -200,17 +261,23 @@ Panel {
   // That second half stops at ten, or at the number held open when that is
   // higher. Some tool somewhere will make workspace 4711 one day, and a
   // workspace nobody asked for should not be able to stretch the bar.
-  readonly property int indicatorCeiling: Math.max(root.alwaysShown, 10)
+  //
+  // With a block of ten per monitor the row stops at ten either way: the
+  // eleventh belongs to the next monitor.
+  readonly property int indicatorCeiling: root.perMonitor ? root.blockSize : Math.max(root.alwaysShown, 10)
+  readonly property int rowLength: Math.min(root.alwaysShown, root.indicatorCeiling)
 
   function workspaceIds() {
+    var first = root.firstId
+    var last = first + root.indicatorCeiling - 1
     var ids = []
-    for (var n = 1; n <= root.alwaysShown; n++) ids.push(n)
+    for (var n = 0; n < root.rowLength; n++) ids.push(first + n)
 
     var values = Hyprland.workspaces.values
 
     for (var i = 0; i < values.length; i++) {
       var id = values[i].id
-      if (id > 0 && id <= root.indicatorCeiling && ids.indexOf(id) === -1) ids.push(id)
+      if (id >= first && id <= last && ids.indexOf(id) === -1) ids.push(id)
     }
 
     ids.sort(function(left, right) { return left - right })
@@ -246,7 +313,17 @@ Panel {
     var n = Math.trunc(Number(id))
     if (!(n > 0)) return
 
-    root.bar.run("hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ workspace = \"" + n + "\" })"))
+    // On Omarchy 4.5 a workspace of this monitor's own goes through
+    // o.workspaces.focus, the same call Super + 1-0 makes: it moves the
+    // keyboard to this bar's monitor first and keeps Omarchy's numbering in
+    // order. The connector name comes from Hyprland and lands inside a Lua
+    // string, so one that is not plainly a connector name falls back to
+    // focusing the id directly.
+    var expression = "hl.dsp.focus({ workspace = \"" + n + "\" })"
+    if (root.perMonitor && root.blockOf(n) === root.block && /^[A-Za-z0-9._-]+$/.test(root.monitorName))
+      expression = "o.workspaces.focus(" + root.slotNumber(n) + ", \"" + root.monitorName + "\")"
+
+    root.bar.run("hyprctl dispatch " + Util.shellQuote(expression))
   }
 
   // Icons for the whole row. Kept apart from the focused workspace's own
@@ -272,7 +349,7 @@ Panel {
   // here.
   function indicatorText(id) {
     var icon = indicatorIcons[id] || ""
-    var number = id === 10 ? "0" : String(id)
+    var number = root.numberText(id)
 
     if (icon === "") return number
     return root.showNumbers ? icon + " " + number : icon
@@ -284,7 +361,7 @@ Panel {
     delegate: FileView {
       // Typed, so what goes into the path below is a number and nothing else.
       required property int index
-      readonly property int workspace: index + 1
+      readonly property int workspace: root.firstId + index
 
       path: root.iconFilePath(workspace)
       watchChanges: true
@@ -442,7 +519,7 @@ Panel {
       Item {
         id: slot
         required property int index
-        readonly property int workspaceNumber: index + 1
+        readonly property int workspaceNumber: root.firstId + index
 
         // The grid skips a hidden child, so a slot out of the row takes no
         // room and no cell. See slotCount.
@@ -456,7 +533,7 @@ Panel {
         readonly property bool keyboardHere: focused && root.monitorFocused
 
         readonly property string iconGlyph: root.indicatorIcons[workspaceNumber] || ""
-        readonly property string numberText: workspaceNumber === 10 ? "0" : String(workspaceNumber)
+        readonly property string numberText: root.numberText(workspaceNumber)
         // With both shown, the icon and the number are drawn as two items
         // rather than as one string. Every Nerd Font glyph advances exactly
         // one monospace cell, but the ink inside that cell runs from about
@@ -644,7 +721,7 @@ Panel {
       PanelSectionHeader {
         width: parent.width
         textFormat: Text.PlainText
-        text: "WORKSPACE " + root.workspaceId
+        text: "WORKSPACE " + root.slotNumber(root.workspaceId)
         foreground: root.foreground
         fontFamily: root.fontFamily
       }

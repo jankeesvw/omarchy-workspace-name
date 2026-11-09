@@ -46,7 +46,9 @@ workspace, and clicking the one you are already on opens the naming panel,
 since there is nothing left to switch to. With more than one monitor, each bar
 shows the workspace its own monitor is on: a filled marker means the keyboard
 is there too, a hollow one means it is on another monitor, and clicking a
-hollow one moves the keyboard there instead of opening the panel. It holds a name field and, under it,
+hollow one moves the keyboard there instead of opening the panel. On Omarchy
+4.5, where every monitor has workspaces of its own, each bar shows its own
+monitor's 1 to 0, the same ones Super + 1-0 reaches there. It holds a name field and, under it,
 a grid of icons. Fill in either, both, or neither,
 then press Enter to save. An empty name clears the name, the first cell of the
 grid (`×`) clears the icon, and clearing both hides the label. Escape closes
@@ -102,6 +104,10 @@ the widget's entry in `~/.config/omarchy/shell.json`:
 One plain-text file per workspace, in `$XDG_STATE_HOME/workspace-hud/<id>`,
 and the icon beside it in `<id>.icon` (usually `~/.local/state/workspace-hud/1`
 and `1.icon`, and so on). No daemon, no database.
+
+The `<id>` is Hyprland's own workspace number. On Omarchy 4.5 each monitor
+owns a block of ten of them, so the second monitor's first workspace is `11`
+and the third's is `21`, each with a name of its own.
 
 That means other tooling can join in. Reading the name of workspace 3 is a
 `cat`:
