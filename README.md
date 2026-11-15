@@ -87,6 +87,21 @@ the width the stock indicators are built at, so nothing about the shape of the
 bar changes. Set `"numbers": true` to show both instead. That reads as `icon 4`
 and grows every button to fit.
 
+Five workspaces stand on the bar whether or not they exist yet, and any other
+that exists is added on top, up to workspace ten. Both numbers can be changed
+in the widget's entry in `~/.config/omarchy/shell.json`. `"alwaysShown"` is how
+many are held open; `0` shows only the workspaces that exist. `"maxShown"` is
+the highest one shown; it defaults to ten, or to `alwaysShown` when that is
+higher. A setup with dedicated workspaces above ten can raise it so those show
+up while they exist and drop off when they close:
+
+```json
+{ "id": "jankeesvw.workspace-name", "alwaysShown": 0, "maxShown": 16 }
+```
+
+Where each monitor has workspaces of its own (Omarchy 4.5), the row is that
+monitor's ten and `maxShown` does not apply.
+
 The reason to want this: an icon on the workspace you are already standing on
 is only half useful, since the row of numbers is where you look to find the one
 you want. Feeding the row and the label from the same file is what keeps them

@@ -51,9 +51,17 @@ Panel {
   // How many workspaces stand on the bar whether or not they exist yet. Five
   // is what the stock indicators hold open, which suits a machine where the
   // high ones come and go; someone who lives on ten wants all ten there, empty
-  // or not, so the row does not reflow under the cursor. The ceiling is only
-  // there to keep a typo from drawing a thousand buttons.
-  readonly property int alwaysShown: Math.max(1, Math.min(99, setting("alwaysShown", 5)))
+  // or not, so the row does not reflow under the cursor. Zero holds none open:
+  // the row is only the workspaces that exist. The ceiling is only there to
+  // keep a typo from drawing a thousand buttons.
+  readonly property int alwaysShown: Math.max(0, Math.min(99, setting("alwaysShown", 5)))
+  // The highest workspace the row will show at all. Zero, the default, means
+  // ten or alwaysShown, whichever is higher. Raise it for a setup that keeps
+  // dedicated workspaces above ten, so they appear while they exist.
+  readonly property int maxShown: {
+    var n = Math.trunc(Number(setting("maxShown", 0)))
+    return n > 0 ? Math.min(99, n) : Math.max(root.alwaysShown, 10)
+  }
 
   readonly property string home: Quickshell.env("HOME") || ""
   readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || home + "/.local/state") + "/workspace-hud"
@@ -87,19 +95,23 @@ Panel {
   // Omarchy 4.5 gives every monitor workspaces 1-10 of its own. Hyprland still
   // numbers workspaces globally, so each monitor owns a block of ten (1-10,
   // 11-20, and so on), and Omarchy writes down which block belongs to which
-  // connector in $XDG_STATE_HOME/omarchy/monitor-workspaces. The row on each
-  // bar is that monitor's block, numbered 1-0 the way Super + 1-0 reaches it
-  // there. Names and icons stay keyed by the real id, so the second monitor's
-  // first workspace keeps a name of its own in workspace-hud/11.
+  // connector in $XDG_STATE_HOME/omarchy/monitors/workspaces. Older releases
+  // kept it in omarchy/monitor-workspaces; both are read, and the new one wins
+  // when both are there. The row on each bar is that monitor's block, numbered
+  // 1-0 the way Super + 1-0 reaches it there. Names and icons stay keyed by
+  // the real id, so the second monitor's first workspace keeps a name of its
+  // own in workspace-hud/11.
   //
-  // Without that file (Omarchy before 4.5) every bar is block 0, which is the
+  // Without either file (Omarchy before 4.5) every bar is block 0, which is the
   // one global row this widget has always drawn.
   readonly property int blockSize: 10
   readonly property string monitorName: root.barMonitor ? root.barMonitor.name : ""
   property var blocks: ({})
   property bool perMonitor: false
+  property var currentBlocks: ({})
+  property var legacyBlocks: ({})
 
-  function readBlocks(text) {
+  function parseBlocks(text) {
     var next = {}
     var lines = String(text || "").split("\n")
     for (var i = 0; i < lines.length; i++) {
@@ -107,17 +119,33 @@ Panel {
       var block = parseInt(fields[0], 10)
       if (fields.length >= 3 && fields[1] !== "" && block >= 0) next[fields[1]] = block
     }
+    return next
+  }
+
+  function pickBlocks() {
+    var next = Object.keys(root.currentBlocks).length > 0 ? root.currentBlocks : root.legacyBlocks
     root.blocks = next
     root.perMonitor = Object.keys(next).length > 0
   }
 
+  readonly property string omarchyState: (Quickshell.env("XDG_STATE_HOME") || root.home + "/.local/state") + "/omarchy"
+
   FileView {
-    path: (Quickshell.env("XDG_STATE_HOME") || root.home + "/.local/state") + "/omarchy/monitor-workspaces"
+    path: root.omarchyState + "/monitors/workspaces"
     watchChanges: true
     printErrors: false
     onFileChanged: reload()
-    onLoaded: root.readBlocks(text())
-    onLoadFailed: root.readBlocks("")
+    onLoaded: { root.currentBlocks = root.parseBlocks(text()); root.pickBlocks() }
+    onLoadFailed: { root.currentBlocks = {}; root.pickBlocks() }
+  }
+
+  FileView {
+    path: root.omarchyState + "/monitor-workspaces"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: { root.legacyBlocks = root.parseBlocks(text()); root.pickBlocks() }
+    onLoadFailed: { root.legacyBlocks = {}; root.pickBlocks() }
   }
 
   function blockOf(id) {
@@ -258,13 +286,14 @@ Panel {
   // they exist or not, so the bar does not reflow as they come and go, plus
   // whatever else happens to exist.
   //
-  // That second half stops at ten, or at the number held open when that is
-  // higher. Some tool somewhere will make workspace 4711 one day, and a
-  // workspace nobody asked for should not be able to stretch the bar.
+  // That second half stops at maxShown: ten, or the number held open when that
+  // is higher, unless set otherwise. Some tool somewhere will make workspace
+  // 4711 one day, and a workspace nobody asked for should not be able to
+  // stretch the bar.
   //
   // With a block of ten per monitor the row stops at ten either way: the
   // eleventh belongs to the next monitor.
-  readonly property int indicatorCeiling: root.perMonitor ? root.blockSize : Math.max(root.alwaysShown, 10)
+  readonly property int indicatorCeiling: root.perMonitor ? root.blockSize : root.maxShown
   readonly property int rowLength: Math.min(root.alwaysShown, root.indicatorCeiling)
 
   function workspaceIds() {
