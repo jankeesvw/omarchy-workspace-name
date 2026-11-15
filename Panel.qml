@@ -51,9 +51,17 @@ Panel {
   // How many workspaces stand on the bar whether or not they exist yet. Five
   // is what the stock indicators hold open, which suits a machine where the
   // high ones come and go; someone who lives on ten wants all ten there, empty
-  // or not, so the row does not reflow under the cursor. The ceiling is only
-  // there to keep a typo from drawing a thousand buttons.
-  readonly property int alwaysShown: Math.max(1, Math.min(99, setting("alwaysShown", 5)))
+  // or not, so the row does not reflow under the cursor. Zero holds none open:
+  // the row is only the workspaces that exist. The ceiling is only there to
+  // keep a typo from drawing a thousand buttons.
+  readonly property int alwaysShown: Math.max(0, Math.min(99, setting("alwaysShown", 5)))
+  // The highest workspace the row will show at all. Zero, the default, means
+  // ten or alwaysShown, whichever is higher. Raise it for a setup that keeps
+  // dedicated workspaces above ten, so they appear while they exist.
+  readonly property int maxShown: {
+    var n = Math.trunc(Number(setting("maxShown", 0)))
+    return n > 0 ? Math.min(99, n) : Math.max(root.alwaysShown, 10)
+  }
 
   readonly property string home: Quickshell.env("HOME") || ""
   readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || home + "/.local/state") + "/workspace-hud"
@@ -258,13 +266,14 @@ Panel {
   // they exist or not, so the bar does not reflow as they come and go, plus
   // whatever else happens to exist.
   //
-  // That second half stops at ten, or at the number held open when that is
-  // higher. Some tool somewhere will make workspace 4711 one day, and a
-  // workspace nobody asked for should not be able to stretch the bar.
+  // That second half stops at maxShown: ten, or the number held open when that
+  // is higher, unless set otherwise. Some tool somewhere will make workspace
+  // 4711 one day, and a workspace nobody asked for should not be able to
+  // stretch the bar.
   //
   // With a block of ten per monitor the row stops at ten either way: the
   // eleventh belongs to the next monitor.
-  readonly property int indicatorCeiling: root.perMonitor ? root.blockSize : Math.max(root.alwaysShown, 10)
+  readonly property int indicatorCeiling: root.perMonitor ? root.blockSize : root.maxShown
   readonly property int rowLength: Math.min(root.alwaysShown, root.indicatorCeiling)
 
   function workspaceIds() {

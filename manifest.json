@@ -22,7 +22,8 @@
     "defaults": {
       "indicators": true,
       "numbers": false,
-      "alwaysShown": 5
+      "alwaysShown": 5,
+      "maxShown": 0
     },
     "schema": [
       {
@@ -43,11 +44,21 @@
         "key": "alwaysShown",
         "type": "integer",
         "label": "Workspaces always shown",
-        "min": 1,
+        "min": 0,
         "max": 99,
         "step": 1,
         "defaultValue": 5,
-        "description": "How many workspaces stand on the bar whether or not they exist yet. Anything beyond this that does exist is added on top, up to ten or this number, whichever is higher."
+        "description": "How many workspaces stand on the bar whether or not they exist yet. Anything beyond this that does exist is added on top, up to the highest workspace shown. Zero shows only the workspaces that exist."
+      },
+      {
+        "key": "maxShown",
+        "type": "integer",
+        "label": "Highest workspace shown",
+        "min": 0,
+        "max": 99,
+        "step": 1,
+        "defaultValue": 0,
+        "description": "The highest workspace number the indicators show. Zero means ten, or the number always shown when that is higher. Raise it to see dedicated workspaces above ten while they exist. Ignored where each monitor has workspaces of its own."
       }
     ]
   }
