@@ -95,19 +95,23 @@ Panel {
   // Omarchy 4.5 gives every monitor workspaces 1-10 of its own. Hyprland still
   // numbers workspaces globally, so each monitor owns a block of ten (1-10,
   // 11-20, and so on), and Omarchy writes down which block belongs to which
-  // connector in $XDG_STATE_HOME/omarchy/monitor-workspaces. The row on each
-  // bar is that monitor's block, numbered 1-0 the way Super + 1-0 reaches it
-  // there. Names and icons stay keyed by the real id, so the second monitor's
-  // first workspace keeps a name of its own in workspace-hud/11.
+  // connector in $XDG_STATE_HOME/omarchy/monitors/workspaces. Older releases
+  // kept it in omarchy/monitor-workspaces; both are read, and the new one wins
+  // when both are there. The row on each bar is that monitor's block, numbered
+  // 1-0 the way Super + 1-0 reaches it there. Names and icons stay keyed by
+  // the real id, so the second monitor's first workspace keeps a name of its
+  // own in workspace-hud/11.
   //
-  // Without that file (Omarchy before 4.5) every bar is block 0, which is the
+  // Without either file (Omarchy before 4.5) every bar is block 0, which is the
   // one global row this widget has always drawn.
   readonly property int blockSize: 10
   readonly property string monitorName: root.barMonitor ? root.barMonitor.name : ""
   property var blocks: ({})
   property bool perMonitor: false
+  property var currentBlocks: ({})
+  property var legacyBlocks: ({})
 
-  function readBlocks(text) {
+  function parseBlocks(text) {
     var next = {}
     var lines = String(text || "").split("\n")
     for (var i = 0; i < lines.length; i++) {
@@ -115,17 +119,33 @@ Panel {
       var block = parseInt(fields[0], 10)
       if (fields.length >= 3 && fields[1] !== "" && block >= 0) next[fields[1]] = block
     }
+    return next
+  }
+
+  function pickBlocks() {
+    var next = Object.keys(root.currentBlocks).length > 0 ? root.currentBlocks : root.legacyBlocks
     root.blocks = next
     root.perMonitor = Object.keys(next).length > 0
   }
 
+  readonly property string omarchyState: (Quickshell.env("XDG_STATE_HOME") || root.home + "/.local/state") + "/omarchy"
+
   FileView {
-    path: (Quickshell.env("XDG_STATE_HOME") || root.home + "/.local/state") + "/omarchy/monitor-workspaces"
+    path: root.omarchyState + "/monitors/workspaces"
     watchChanges: true
     printErrors: false
     onFileChanged: reload()
-    onLoaded: root.readBlocks(text())
-    onLoadFailed: root.readBlocks("")
+    onLoaded: { root.currentBlocks = root.parseBlocks(text()); root.pickBlocks() }
+    onLoadFailed: { root.currentBlocks = {}; root.pickBlocks() }
+  }
+
+  FileView {
+    path: root.omarchyState + "/monitor-workspaces"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: { root.legacyBlocks = root.parseBlocks(text()); root.pickBlocks() }
+    onLoadFailed: { root.legacyBlocks = {}; root.pickBlocks() }
   }
 
   function blockOf(id) {
